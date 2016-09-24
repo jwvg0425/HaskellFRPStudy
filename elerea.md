@@ -49,3 +49,22 @@ tail (join s) is equal to join (fmap tail (tail s))
 
 ### Doing without Cons
 
+우선 스트림은 모두 순차적으로 접근하게 된다고 가정. 새로 생겨난 스트림의 옛날 값을 샘플링할 필요도 없다. 새로운 스트림이 합성될 때, 그 기준점은 생성되는 시점으로 정의됨을 보장. 다만 참조 투명성을 유지하기 위해서는 글로벌 타임 기반으로 동작해야만 함. 기본 아이디어는 시작 시점을 효율적으로 추적하면서 로컬 타임 컴포넌트를 글로벌 타임라인에 매핑하는 것.
+
+`Stream a`를 시간 `N`에 따른 `a` 값으로 보면 `N->a`의 함수 타입으로 생각할 수 있다. 이 때 `delay` 함수를 생각해보자. 그냥 `N->a` 타입은 스트림의 시작 시간을 알 수 없다는 문제가 있고, 이를 함수의 인자로 시작 시간을 넘겨주는 것을 통해 해결한다.
+
+```Haskell
+delay x s t_start t_sample
+    | t_start == t_sample = x
+    | t_start < t_sample = s (t_sample - 1)
+    | otherwise = error "Premature sample!"
+```
+
+여기서 `delay x s`는 스트림이 아니라 **스트림 제너레이터(stream generator)**다. 이 모델에서 스트림 제너레이터는 마찬가지로 `N->a` 타입을 가지지만, 여기서 `N`의 의미가 다르다. 스트림 제너레이터는 시작시간 `N`을 받아서 새로운 스트림을 만들어내는 것. 이걸 명확히 하기 위해 아래와 같이 쓴다.
+
+```Haskell
+type Stream a = N -> a
+type StreamGen a = N -> a
+
+delay :: a -> Stream a -> StreamGen (Stream a)
+```
