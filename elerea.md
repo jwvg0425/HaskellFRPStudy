@@ -68,3 +68,24 @@ type StreamGen a = N -> a
 
 delay :: a -> Stream a -> StreamGen (Stream a)
 ```
+
+`delay`의 정의를 보면 알 수 있듯 인자로 넘어 온 시작 시점 값이 샘플 시간보다 이후면(미래의 값이면) 에러가 발생한다. 이런 오류를 방지하기 위해 `start` 함수를 쓴다.
+
+```Haskell
+start :: StreamGen (Stream a) -> Stream a
+start g = g 0
+```
+
+0 시간에서 시작하는 건 항상 가능하므로 시간 0 값을 시작 값으로 넘기는 것.
+
+하지만 이건 무조건 0에서 시작하게 만들기 때문에 만족스럽지 못하다. 그래서 unsafe하지 않으면서도 시작 시점을 다르게 설정할 수 있게 하기 위해 다른 combinator가 필요하다. 가장 기본적인 방식은 현재 샘플링 시간을 제너레이터에 넘겨서 스트림을 만드는 것.
+
+```Haskell
+generator :: Stream (StreamGen a) -> Stream a
+generator g t_sample = g t_sample g t_sample
+```
+
+이렇게 보민 `generator`가 `join` 함수 역할이 되어버림. 스트림 제너레이터 역시 스트림으로 본다면, `start` 함수는 `head`와 같은 것으로, `generator` 함수는 `join`과 같은 것으로, `delay`는 스트림의 스트림을 만드는 함수로 생각할 수 있음. `join`과 `generator`의 가장 큰 차이점은 `generator`는 새로운 스트림을 생성하는 것에 쓰이고, `join`은 기존에 존재하던 스트림들을 샘플링하는 것에만 쓰일 수 있다는 점.
+
+### A Motivating Example
+
