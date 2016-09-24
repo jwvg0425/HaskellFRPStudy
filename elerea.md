@@ -15,4 +15,37 @@ elerea에 관한 자료 공부. 우선 해당 라이브러리의 기반이 된 �
 
 ### Higher-Order 스트림의 문제
 
-스트림은 `head`와 `tail`을 통해 관찰 가능한 오브젝트다. 원소 타입이 `a`일 때 스트림은 `Stream a`타입으로 나타낼 수 있음. 스트림은 applicative functor이고, 따라서 `pure`와 `ap` 함수를 정의할 수 있다. 임의의 정적 네트워크를 구서항기 위해서 시작 시점으로부터의 단위 시간 딜레이 함수가 필요. 피드백은 `value recursion`으로 표현 가능. 
+스트림은 `head`와 `tail`을 통해 관찰 가능한 오브젝트다. 원소 타입이 `a`일 때 스트림은 `Stream a`타입으로 나타낼 수 있음. 스트림은 applicative functor이고, 따라서 `pure`와 `ap` 함수를 정의할 수 있다. 임의의 정적 네트워크를 구성하기 위해서 시작 시점으로부터의 단위 시간 딜레이 함수가 필요. 피드백은 `value recursion`으로 표현 가능.
+
+#### First-order stream constructor
+
+```Haskell
+cons x s = < x s_0 s_1 s_2 s_3 ... >
+
+head (cons x s) is equal to x
+tail (cons x s) is equal to s
+
+pure x = < x x x x x ... >
+
+head (pure x) is equal to x
+tail (pure x) is equal to pure x
+
+f `ap` x = < (f_0 x_0) (f_1 x_1) (f_2) (x_2) (f_3 x_3) ... >
+
+head (f `ap` x) is equal to (head f) (head x)
+tail (f `ap` x) is equal to (tail f) `ap` (tail x)
+```
+
+#### dynamic network
+
+동적 네트워크를 구성하는 경우를 생각해보자. 만약 higher-order 스트림을 펼치는(flatten) 연산을 정의할 수 있다면 higher-order 스트림을 실제 동적 네트워크로 바꿀 수 있다(어째서? - 잘 모르겠음. 좀 더 봐야 알 듯. 적혀 있는 설명만으로는 이해를 못하겠음). 이 건 모나드의 `join` 연산을 따라야 함. `join` 함수가 뭔 일을 하는 지 생각하면 이건 직관적인 듯. 
+
+```Haskell
+head (join s) is equal to head (head s)
+tail (join s) is equal to join (fmap tail (tail s))
+```
+
+`join s`는 스트림의 스트림 s에서 대각선 성분 `s_00 s_11 s_22 s_33 ...`을 나타낸다고 생각하면 됨. 하지만 여기서 이게 실용적이지 못한 점은, 효율성이 굉장히 떨어지기 때문이다. n번의 샘플링은 n^2번의 스텝을 필요로 하니까. 
+
+### Doing without Cons
+
